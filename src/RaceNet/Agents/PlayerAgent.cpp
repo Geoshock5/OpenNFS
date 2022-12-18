@@ -4,6 +4,7 @@ PlayerAgent::PlayerAgent(const std::shared_ptr<GLFWwindow> &window, const std::s
     CarAgent(AgentType::PLAYER, car, raceTrack), m_window(window)
 {
     name = "DumbPanda";
+    //const unsigned char *hats = glfwGetJoystickHats(GLFW_JOYSTICK_1, count);
 }
 
 void PlayerAgent::Simulate()
@@ -12,12 +13,23 @@ void PlayerAgent::Simulate()
     this->_UpdateNearestTrackblock();
     this->_UpdateNearestVroad();
 
-    // if (userParams.windowActive && !ImGui::GetIO().MouseDown[1]) { }
-    vehicle->ApplyAccelerationForce(glfwGetKey(m_window.get(), GLFW_KEY_W) == GLFW_PRESS, glfwGetKey(m_window.get(), GLFW_KEY_S) == GLFW_PRESS);
-    vehicle->ApplyBrakingForce(glfwGetKey(m_window.get(), GLFW_KEY_SPACE) == GLFW_PRESS);
-    vehicle->ApplySteeringRight(glfwGetKey(m_window.get(), GLFW_KEY_D) == GLFW_PRESS);
-    vehicle->ApplySteeringLeft(glfwGetKey(m_window.get(), GLFW_KEY_A) == GLFW_PRESS);
 
+    // Handle joystick input
+    if (m_joyState->joy0axcount > 0)
+    {
+        vehicle->ApplyAccelerationForce((float)((m_joyState->joy0axes[5] + 1.0f) / 2.0f), (float)((m_joyState->joy0axes[4] + 1.0f) / 2.0f));
+        vehicle->ApplyBrakingForce(m_joyState->joy0buttons[0]);
+        vehicle->ApplyAnalogSteering(m_joyState->joy0axes[0]);
+    }
+
+    // if (userParams.windowActive && !ImGui::GetIO().MouseDown[1]) { }
+    if (m_joyState->joy0axcount == NULL)
+    {
+        vehicle->ApplyAccelerationForce(glfwGetKey(m_window.get(), GLFW_KEY_W) == GLFW_PRESS, glfwGetKey(m_window.get(), GLFW_KEY_S) == GLFW_PRESS);
+        vehicle->ApplyBrakingForce(glfwGetKey(m_window.get(), GLFW_KEY_SPACE) == GLFW_PRESS);
+        vehicle->ApplySteeringRight(glfwGetKey(m_window.get(), GLFW_KEY_D) == GLFW_PRESS);
+        vehicle->ApplySteeringLeft(glfwGetKey(m_window.get(), GLFW_KEY_A) == GLFW_PRESS);
+    }
     if (glfwGetKey(m_window.get(), GLFW_KEY_R) == GLFW_PRESS)
     {
         ResetToVroad(m_nearestVroadID, 0.f);

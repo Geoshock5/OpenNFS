@@ -33,7 +33,19 @@ void TrackRenderer::Render(const std::vector<std::shared_ptr<CarAgent>> &racers,
     for (auto &entity : visibleEntities)
     {
         m_trackShader.loadTransformMatrix(boost::get<TrackModel>(entity->raw).ModelMatrix);
-        boost::get<TrackModel>(entity->raw).render();
+        ///* Road signs flicker due to lack of culling.Enable culling specifically to render road signs.
+        if((entity->type == EntityType::XOBJ))// && ((entity->flags) >> 4 & 0x7 == 5))
+        {
+            glEnable(GL_CULL_FACE);
+            boost::get<TrackModel>(entity->raw).render();
+            glDisable(GL_CULL_FACE);
+        }
+        else
+        {
+            boost::get<TrackModel>(entity->raw).render();
+        }
+        //*/
+        //boost::get<TrackModel>(entity->raw).render();
     }
 
     m_trackShader.unbind();
@@ -42,6 +54,8 @@ void TrackRenderer::Render(const std::vector<std::shared_ptr<CarAgent>> &racers,
 
 void TrackRenderer::RenderLights(const std::shared_ptr<BaseCamera> &camera, const std::vector<shared_ptr<BaseLight>> &lights)
 {
+    //Disable depth write while rendering lights
+    glDepthMask(GL_FALSE);
     m_billboardShader.use();
 
     for (auto &light : lights)
@@ -56,6 +70,8 @@ void TrackRenderer::RenderLights(const std::shared_ptr<BaseCamera> &camera, cons
     }
     m_billboardShader.unbind();
     m_billboardShader.HotReload();
+    //Enable depth mask when done
+    glDepthMask(GL_TRUE);
 }
 
 TrackRenderer::~TrackRenderer()

@@ -3,7 +3,7 @@
 #include <glm/vec3.hpp>
 #include "../Models/Model.h"
 
-const float kLightSize = 3.0f;
+const float kLightSize = 1.5f;
 
 const std::vector<glm::vec3> verts = {
   glm::vec3(-kLightSize, -kLightSize, 0), // bottom left corner

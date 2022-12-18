@@ -15,6 +15,9 @@
 #include "../Config.h"
 #include "RacerManager.h"
 #include "OrbitalManager.h"
+#include "al.h"
+#include "alc.h"
+#include "../Loaders/MusicLoader.h"
 
 class RaceSession
 {
@@ -47,7 +50,26 @@ private:
     RacerManager m_racerManager;
     OrbitalManager m_orbitalManager;
 
+    ALCdevice *m_soundDevice = 0;
+    ALCcontext *m_soundContext = 0;
+    FILE *musicstream = 0;
+
+    ALuint uiBuffers;
+    ALuint uiSource;
+    ALuint uiBuffer;
+    ALint iState;
+    ALint iLoop;
+    ALint iBuffersProcessed, iTotalBuffersProcessed, iQueuedBuffers;
+    WAVEFORMATEX wfex;
+    unsigned long ulDataSize  = 0;
+    unsigned long ulFrequency = 0;
+    unsigned long ulFormat    = 0;
+    unsigned long ulBufferSize;
+    unsigned long ulBytesWritten;
+    void *pData = NULL;
+
     ParamData m_userParams;
+    JoyState m_joyState;
     uint64_t m_ticks  = 0; // Engine ticks elapsed
     float m_totalTime = 0;
 };

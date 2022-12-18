@@ -110,7 +110,7 @@ private:
 
 struct ParamData
 {
-    float timeScaleFactor       = 1.f;
+    float timeScaleFactor       = 0.1f;
     ImVec4 sunAttenuation       = ImVec4(0.f, 0.f, 0.f, 1.0f);
     float trackSpecReflectivity = 1;
     float nearPlane             = 160.f;
@@ -144,4 +144,14 @@ struct NfsAssetList
     NFSVer tag;
     std::vector<std::string> tracks;
     std::vector<std::string> cars;
+};
+
+struct JoyState
+{
+    /* -- Joystick state -- */
+    int joynum      = 0;
+    int joy0axcount = NULL;
+    const float* joy0axes;
+    int joy0butcount = NULL;
+    const unsigned char* joy0buttons;
 };

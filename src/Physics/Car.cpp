@@ -95,6 +95,31 @@ void Car::ApplyAccelerationForce(bool accelerate, bool reverse)
     }
 }
 
+void Car::ApplyAccelerationForce(float accelerate, float reverse)
+{
+    if (accelerate)
+    {
+        if (m_vehicle->getCurrentSpeedKmHour() < vehicleProperties.maxSpeed)
+        {
+            vehicleState.gEngineForce   = vehicleProperties.maxEngineForce * accelerate;
+            vehicleState.gBreakingForce = 0.f;
+        }
+        else
+        {
+            vehicleState.gEngineForce = 0.f;
+        }
+    }
+    else if (reverse)
+    {
+        vehicleState.gEngineForce   = -vehicleProperties.maxEngineForce * reverse;
+        vehicleState.gBreakingForce = 0.f;
+    }
+    else
+    {
+        vehicleState.gEngineForce = 0.f;
+    }
+}
+
 void Car::ApplySteeringRight(bool apply)
 {
     vehicleState.steerRight = apply;
@@ -113,6 +138,12 @@ void Car::ApplyAbsoluteSteerAngle(float targetAngle)
     float finalSteering = targetAngle; // - 0.5f;
     // Clamp value within steering extents
     vehicleState.gVehicleSteering = std::max(-vehicleProperties.steeringClamp, std::min(finalSteering, vehicleProperties.steeringClamp));
+}
+
+void Car::ApplyAnalogSteering(float steeringAxis)
+{
+    vehicleProperties.absoluteSteer = true;
+    vehicleState.gVehicleSteering = vehicleProperties.steeringClamp * -steeringAxis;
 }
 
 void Car::ApplyBrakingForce(bool apply)

@@ -329,6 +329,18 @@ void Renderer::_DrawDebugUI(ParamData &userParams, const std::shared_ptr<BaseCam
     ImGui::SliderFloat("Near Plane", &userParams.nearPlane, 0, 300);
     ImGui::SliderFloat("Far Plane", &userParams.farPlane, 0, 300);
     ImGui::End();
+    // Draw Input UI
+    ImGui::Begin("Input Data");
+    ImGui::Text("Joystick 1: %s", (glfwJoystickPresent(GLFW_JOYSTICK_1)==GLFW_TRUE) ? "Connected" : "Disconnected");
+    for (size_t i = 0; i < m_joyState->joy0axcount; i++)
+    {
+        ImGui::Text("Joy 1 Axis %i: %f", i, m_joyState->joy0axes[i]);
+    }
+    for (size_t i = 0; i < m_joyState->joy0butcount; i++)
+    {
+        ImGui::Text("Joy 1 Button %i: %i", i, m_joyState->joy0buttons[i]);
+    }
+    ImGui::End();
     // Draw Logger UI
     m_logger->onScreenLog.Draw("ONFS Log");
     // Draw UI (Tactically)
@@ -374,7 +386,6 @@ void Renderer::_DrawDebugUI(ParamData &userParams, const std::shared_ptr<BaseCam
     ImGui::Render();
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 }
-
 bool Renderer::_DrawMenuBar(AssetData &loadedAssets)
 {
     bool assetChange = false;

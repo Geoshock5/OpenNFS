@@ -65,6 +65,8 @@ public:
                 AssetData &loadedAssets,
                 const std::vector<std::shared_ptr<CarAgent>> &racers);
 
+    JoyState *m_joyState;
+
 private:
     void _InitialiseIMGUI();
     bool _DrawMenuBar(AssetData &loadedAssets);

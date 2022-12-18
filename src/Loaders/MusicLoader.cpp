@@ -55,7 +55,7 @@ MusicLoader::MusicLoader(const std::string &song_base_path)
     LOG(INFO) << "Loading Song " << song_name << " from " << song_base_path;
 
     mus_path << song_base_path << ".mus";
-    map_path << song_base_path << ".map";
+    map_path << song_base_path << ".lin";
 
     ParseMAP(map_path.str(), mus_path.str());
 }
@@ -286,17 +286,19 @@ bool MusicLoader::ReadSCHl(FILE *mus_file, uint32_t sch1Offset, FILE *pcm_file)
     // Check ID string is PT
     fread(blockIDString, sizeof(char), 4, mus_file);
 
-    uint32_t dwSampleRate      = 0;
-    uint32_t dwChannels        = 0;
+    uint32_t dwSampleRate      = 22050; // Default if not specified
+    uint32_t dwChannels        = 2; // Default if not specified
     uint32_t dwCompression     = 0;
     uint32_t dwNumSamples      = 0;
     uint32_t dwDataStart       = 0;
     uint32_t dwLoopOffset      = 0;
     uint32_t dwLoopLength      = 0;
-    uint32_t dwBytesPerSample  = 0;
+    uint32_t dwBytesPerSample  = 2; // Default if not specified
     uint32_t bSplit            = 0;
     uint32_t bSplitCompression = 0;
 
+
+    //fseek(mus_file, 4, SEEK_CUR);
     ParsePTHeader(mus_file, &dwSampleRate, &dwChannels, &dwCompression, &dwNumSamples, &dwDataStart, &dwLoopOffset, &dwLoopLength, &dwBytesPerSample, &bSplit, &bSplitCompression);
 
     uint32_t sch1Size = chk->dwSize;
@@ -312,8 +314,8 @@ bool MusicLoader::ReadSCHl(FILE *mus_file, uint32_t sch1Offset, FILE *pcm_file)
         return false;
     }
     uint32_t scc1Size = chk->dwSize;
-    uint8_t nSCD1Blocks;
-    fread(&nSCD1Blocks, sizeof(uint8_t), 1, mus_file);
+    uint32_t nSCD1Blocks;
+    fread(&nSCD1Blocks, sizeof(uint32_t), 1, mus_file);
 
     long totalSCD1InterleaveSize = 0;
 
@@ -361,6 +363,7 @@ void MusicLoader::ParseMAP(const std::string &map_path, const std::string &mus_p
     map.read((char *) mapHeader, sizeof(MAPHeader));
     std::cout << (int) mapHeader->bNumSections << " Sections" << std::endl;
 
+    // Read the MAP file positions table
     MAPSectionDef *sectionDefTable = static_cast<MAPSectionDef *>(calloc(mapHeader->bNumSections, sizeof(MAPSectionDef)));
     map.read((char *) sectionDefTable, mapHeader->bNumSections * sizeof(MAPSectionDef));
 
@@ -384,14 +387,14 @@ void MusicLoader::ParseMAP(const std::string &map_path, const std::string &mus_p
     uint8_t section_Idx = mapHeader->bFirstSection;
 
     // TODO: Linear playthrough until I work out the looping malarkey
-    for (auto lol = 0; lol < mapHeader->bNumSections; ++lol)
+    /* for (auto lol = 0; lol < mapHeader->bNumSections; lol++)
     {
         if (!ReadSCHl(mus_file, startingPositions[lol], pcm_file))
         { //
             std::cout << "Error reading SCHl block, POS: " << (int) lol << " Offset: " << startingPositions[lol] << std::endl;
             break;
         }
-    }
+    }*/
 
     // Out of spec: TrackModel number of times played section, use to set next section
     auto playedSections = std::map<uint8_t, int8_t>();

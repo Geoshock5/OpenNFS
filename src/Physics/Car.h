@@ -105,10 +105,12 @@ public:
     void Update(btDynamicsWorld* dynamicsWorld);
     void SetPosition(glm::vec3 position, glm::quat orientation);
     void ApplyAccelerationForce(bool accelerate, bool reverse);
+    void ApplyAccelerationForce(float accelerate, float reverse);
     void ApplyBrakingForce(bool apply);
     void ApplySteeringRight(bool apply);
     void ApplySteeringLeft(bool apply);
     void ApplyAbsoluteSteerAngle(float targetAngle);
+    void ApplyAnalogSteering(float steeringAxis);
     float GetCarBodyOrientation();
 
     // Physics Engine registration
