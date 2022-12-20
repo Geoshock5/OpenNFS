@@ -60,7 +60,104 @@ MusicLoader::MusicLoader(const std::string &song_base_path)
     ParseMAP(map_path.str(), mus_path.str());
 }
 
-uint32_t MusicLoader::ReadBytes(FILE *file, uint8_t count)
+std::vector<AudioBuffer> BnkLoader::LoadBnk(const std::string &bnk_base_path)
+{
+    AudioBuffer *buffer = new AudioBuffer();
+    std::vector<AudioBuffer> vBufferArray;
+    
+    // Get the file from the input
+    LOG(INFO) << "Loading Sounds " << bnk_base_path << " from " << bnk_base_path;
+
+    // Open the file as a stream
+    FILE *bnkFile = fopen(bnk_base_path.c_str(), "rb");
+
+    if (!bnkFile)
+    {
+        LOG(INFO) << "Unable to open BNK file. Check path name.\n";
+    }
+
+    // Parse the header
+    uint16_t numSamples;
+    fseek(bnkFile, 4, SEEK_SET);
+    fread(&numSamples, sizeof(uint16_t), 1, bnkFile);
+    rewind(bnkFile);
+    
+    NewBNKHeader* bnkHeader = (NewBNKHeader *) calloc(1,sizeof(NewBNKHeader) + (sizeof(uint32_t) * numSamples));
+    LOG(INFO) << "Header struct size " << sizeof(NewBNKHeader) + (sizeof(uint32_t) * numSamples);
+    fread(bnkHeader, sizeof(NewBNKHeader) + (sizeof(uint32_t) * numSamples), 1, bnkFile);
+
+    /* DEBUG: Check that we've read header offsets OK.
+    for (size_t i = 0; i < bnkHeader->wNumberOfSounds; i++)
+    {
+        LOG(INFO) << "Header offset " << i << " : " << bnkHeader->dwSoundsArray[i];
+    }
+    */
+    LoadNewBnk(bnkFile, bnkHeader, buffer, vBufferArray);
+    return vBufferArray;
+
+    fclose(bnkFile);
+}
+
+void BnkLoader::LoadNewBnk(FILE *bnkFile, NewBNKHeader *bnkHeader, AudioBuffer *buffer, std::vector<AudioBuffer> &vBufferArray)
+{
+    /* LOG(INFO) << "Parsed BNKl header, total " << bnkHeader->wNumberOfSounds << " sounds found.";
+    for (size_t i = 0; i < bnkHeader->wNumberOfSounds; ++i)
+    {
+        LOG(INFO) << "Header offset " << i << " : " << bnkHeader->dwSoundsArray[i];
+    }*/
+
+    // Parse the PT headers
+    PTHeader newHeader;
+    std::vector<PTHeader> ptHeaders;
+
+    for (size_t i = 0; i < bnkHeader->wNumberOfSounds; ++i)
+    {
+        fseek(bnkFile, 20 + (4 * i) + 4 + bnkHeader->dwSoundsArray[i], SEEK_SET);
+        //LOG(INFO) << "Attempting to read header at loc " << ftell(bnkFile);
+
+        ParsePTHeader(bnkFile,
+                      &(newHeader.dwSampleRate),
+                      &(newHeader.dwChannels),
+                      &(newHeader.dwCompression),
+                      &(newHeader.dwNumSamples),
+                      &(newHeader.dwDataStart),
+                      &(newHeader.dwLoopOffset),
+                      &(newHeader.dwLoopLength),
+                      &(newHeader.dwBytesPerSample),
+                      &(newHeader.bSplit),
+                      &(newHeader.bSplitCompression));
+
+        ptHeaders.push_back(newHeader);
+
+        /*
+        LOG(INFO) << "Header parsed, SR " << newHeader.dwSampleRate << ", length " << newHeader.dwNumSamples << " samples starting at position " << newHeader.dwDataStart
+                  << " bytes. Total sample data " << bnkHeader->dwSoundSize << " bytes.";
+
+                LOG(INFO) << "Header parsed, SR " << ptHeaders[i].dwSampleRate << ", length " << ptHeaders[i].dwNumSamples << " samples starting at position " << ptHeaders[i].dwDataStart
+                  << " bytes. Total sample data " << bnkHeader->dwSoundSize << " bytes.";
+        */
+
+        // TODO: For each PT header where compression!=0, decompress the EAADPCM stream
+
+        // Pass the data out to buffers. TODO: Handle exceptions for null files.
+        if (ptHeaders[i].dwNumSamples > 0)
+        {
+            buffer->SetBuffer((char *) calloc(ptHeaders[i].dwNumSamples, ptHeaders[i].dwBytesPerSample));
+            buffer->SetHeader(ptHeaders[i]);
+
+            fseek(bnkFile, ptHeaders[i].dwDataStart, SEEK_SET);
+            fread(buffer->GetBufPtr(), ptHeaders[i].dwBytesPerSample, ptHeaders[i].dwNumSamples, bnkFile);
+            vBufferArray.push_back(*buffer);
+
+            /* LOG(INFO) << "Buffer at " << buffer->GetBufPtr() << " has buffer of size " << buffer->GetHeaderPtr()->dwNumSamples << " and buffer object "
+                      << sizeof(*(buffer->GetBufPtr()));*/
+        }
+    }
+
+    // TODO: Clean up, release memory and close open file pointers
+}
+
+uint32_t AudioLoader::ReadBytes(FILE *file, uint8_t count)
 {
     uint8_t i, byte;
     uint32_t result;
@@ -69,7 +166,7 @@ uint32_t MusicLoader::ReadBytes(FILE *file, uint8_t count)
     for (i = 0; i < count; i++)
     {
         fread(&byte, sizeof(uint8_t), 1, file);
-        result <<= 8;
+        result = result << 8;
         result += byte;
     }
 
@@ -78,7 +175,7 @@ uint32_t MusicLoader::ReadBytes(FILE *file, uint8_t count)
 
 // This function assumes that the current file pointer is set to the
 // start of PT header data, that is, just after PT string ID "PT\0\0"
-void MusicLoader::ParsePTHeader(FILE *file,
+void AudioLoader::ParsePTHeader(FILE *file,
                                 uint32_t *dwSampleRate,
                                 uint32_t *dwChannels,
                                 uint32_t *dwCompression,
@@ -101,7 +198,9 @@ void MusicLoader::ParsePTHeader(FILE *file,
         {
         case 0xFF: // end of header
             bInHeader = false;
+            break;
         case 0xFE: // skip
+            break;
         case 0xFC: // skip
             break;
         case 0xFD: // subheader starts...
@@ -156,7 +255,8 @@ void MusicLoader::ParsePTHeader(FILE *file,
                     bInHeader    = false;
                     break;
                 case 0x8A: // end of subheader
-                    bInSubHeader = true;
+                    bInSubHeader = false; // BUGFIX: Was true
+                    break;
                 default: // ???
                     fread(&byte, sizeof(uint8_t), 1, file);
                     fseek(file, byte, SEEK_CUR);
@@ -172,7 +272,7 @@ void MusicLoader::ParsePTHeader(FILE *file,
     }
 }
 
-void MusicLoader::DecompressEAADPCM(ASFChunkHeader *asfChunkHeader, long nSamples, FILE *mus_file, FILE *pcm_file)
+void AudioLoader::DecompressEAADPCM(ASFChunkHeader *asfChunkHeader, long nSamples, FILE *mus_file, FILE *pcm_file)
 {
     uint32_t l = 0, r = 0;
     uint16_t *outBufL = (uint16_t *) calloc(nSamples, sizeof(uint16_t));
@@ -269,7 +369,7 @@ void MusicLoader::DecompressEAADPCM(ASFChunkHeader *asfChunkHeader, long nSample
     free(outBufR);
 }
 
-bool MusicLoader::ReadSCHl(FILE *mus_file, uint32_t sch1Offset, FILE *pcm_file)
+bool AudioLoader::ReadSCHl(FILE *mus_file, uint32_t sch1Offset, FILE *pcm_file)
 {
     fseek(mus_file, static_cast<long>(sch1Offset), SEEK_SET);
 

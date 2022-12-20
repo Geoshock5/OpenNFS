@@ -22,4 +22,5 @@ public:
 private:
     ALCdevice *m_soundDevice   = 0;
     ALCcontext *m_soundContext = 0;
+    ~AudioEngine();
 };

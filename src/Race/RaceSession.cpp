@@ -26,25 +26,32 @@ RaceSession::RaceSession(const std::shared_ptr<GLFWwindow> &window,
         alcMakeContextCurrent(m_soundContext);
 
         //MusicLoader::MusicLoader("../resources/NFS_3/gamedata/audio/pc/alpirock");
+        BnkLoader bnkFile;
+        std::vector<AudioBuffer> horn = bnkFile.LoadBnk("assets/car/NFS_3/corv/car.bnk");
+        LOG(INFO) << "Buffer has " << horn[0].GetHeaderPtr()->dwNumSamples << " samples of data. Buffer size " << sizeof(*horn[0].GetBufPtr()) << " bytes";
 
+        /*
         // Open raw PCM stream
-        musicstream = fopen("stereo.pcm", "rb");
+        musicstream = fopen("file.pcm", "rb");
         fseek(musicstream, 0, SEEK_END);
         long streamlength = ftell(musicstream);
         fseek(musicstream, 0, SEEK_SET);
+        
 
         ALchar *musicData = new char[streamlength];
         fread(musicData, streamlength, 1, musicstream);
+        */
 
         // Generate buffers and sources
         alGenBuffers(1, &uiBuffer);
         alGenSources(1, &uiSource);
 
         // Add file to buffer
-        alBufferData(uiBuffer, AL_FORMAT_STEREO16, musicData, streamlength, 22050);
+        alBufferData(uiBuffer, AL_FORMAT_MONO16, horn[0].GetBufPtr(), horn[0].GetHeaderPtr()->dwNumSamples * horn[0].GetHeaderPtr()->dwBytesPerSample, horn[0].GetHeaderPtr()->dwSampleRate);
         
         // Attach source to buffer, queue and play
         alSourcei(uiSource, AL_BUFFER, uiBuffer);
+        alSourcei(uiSource, AL_LOOPING, AL_TRUE);
         //alSourceQueueBuffers(uiSource, 1, &uiBuffer);
         alSourcePlay(uiSource);
     }
