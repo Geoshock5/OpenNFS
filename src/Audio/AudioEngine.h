@@ -9,8 +9,6 @@ class AudioEngine
 {
 public:
     AudioEngine();
-    bool Init();
-    bool Shutdown();
 
     ALuint uiBuffers;
     ALuint uiSource;

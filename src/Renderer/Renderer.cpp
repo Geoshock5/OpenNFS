@@ -341,6 +341,54 @@ void Renderer::_DrawDebugUI(ParamData &userParams, const std::shared_ptr<BaseCam
         ImGui::Text("Joy 1 Button %i: %i", i, m_joyState->joy0buttons[i]);
     }
     ImGui::End();
+    /*
+    // Draw Car Data
+    ImGui::Begin("Vehicle Data");
+    std::shared_ptr<Car> targetCar = m_playerCar;
+    ImGui::Text("%s Supported Colours:", targetCar->name.c_str());
+    for (auto &carColour : targetCar->assetData.colours)
+    {
+        ImVec4 carColourIm(carColour.colour.x, carColour.colour.y, carColour.colour.z, 0);
+        ImGui::ColorEdit4(carColour.colourName.c_str(), (float *) &carColourIm); // Edit 3 floats representing a color
+    }
+    ImGui::Text("Ray Distances U: %f F: %f R: %f L: %f",
+                targetCar->rangefinderInfo.upDistance,
+                targetCar->rangefinderInfo.rangefinders[RayDirection::FORWARD_RAY],
+                targetCar->rangefinderInfo.rangefinders[RayDirection::RIGHT_RAY],
+                targetCar->rangefinderInfo.rangefinders[RayDirection::LEFT_RAY]);
+    ImGui::Text("Ratios %f %f %f %f %f %f %f %f", targetCar->vehicleProperties.gearRatiosMan[0], targetCar->vehicleProperties.gearRatiosMan[1],
+                targetCar->vehicleProperties.gearRatiosMan[2],
+                targetCar->vehicleProperties.gearRatiosMan[3], targetCar->vehicleProperties.gearRatiosMan[4], targetCar->vehicleProperties.gearRatiosMan[5],
+                targetCar->vehicleProperties.gearRatiosMan[6], targetCar->vehicleProperties.gearRatiosMan[7]);
+    for (size_t i = 0; i < 8; i++)
+    {
+        ImGui::Text("Torque %f %f %f %f %f",
+                    targetCar->vehicleProperties.torqueCurve[5*i],
+                    targetCar->vehicleProperties.torqueCurve[5*i + 1],
+                    targetCar->vehicleProperties.torqueCurve[5*i + 2], targetCar->vehicleProperties.torqueCurve[5*i +3], targetCar->vehicleProperties.torqueCurve[5*i + 4]);
+    }
+    ImGui::Text("Mass %f", targetCar->vehicleProperties.mass);
+    ImGui::Text("Speed %f km/h", targetCar->GetVehicle()->getCurrentSpeedKmHour());
+    ImGui::Text("Gear: %i RPM: %f", (targetCar->vehicleState.currentGear-1), targetCar->vehicleState.rpm);
+    // Physics Parameters
+    ImGui::SliderFloat("Engine Force", &targetCar->vehicleState.gEngineForce, 0, 10000.0f);
+    ImGui::SliderFloat("Breaking Force", &targetCar->vehicleState.gBreakingForce, 0, 1000.0f);
+    ImGui::SliderFloat("Max Engine Force", &targetCar->vehicleProperties.maxEngineForce, 0, 10000.0f);
+    ImGui::SliderFloat("Max Breaking Force", &targetCar->vehicleProperties.maxBreakingForce, 0, 1000.0f);
+    ImGui::SliderFloat("Susp Rest.", &targetCar->vehicleProperties.suspensionRestLength, 0, 0.1f); // btScalar(0.030);
+    ImGui::SliderFloat("Susp Stiff.", &targetCar->vehicleProperties.suspensionStiffness, 0, 1000.f);
+    ImGui::SliderFloat("Susp Damp.", &targetCar->vehicleProperties.suspensionDamping, 0, 1000.f);
+    ImGui::SliderFloat("Susp Compr.", &targetCar->vehicleProperties.suspensionCompression, 0, 1000.f);
+    ImGui::SliderFloat("Friction.", &targetCar->vehicleProperties.wheelFriction, 0, 1.f);
+    ImGui::SliderFloat("Roll Infl.", &targetCar->vehicleProperties.rollInfluence, 0, 0.5);
+    ImGui::SliderFloat("Steer Incr.", &targetCar->vehicleProperties.steeringIncrement, 0.f, 0.1f);
+    ImGui::SliderFloat("Steer Clamp", &targetCar->vehicleProperties.steeringClamp, 0.f, 0.5f);
+    ImGui::Text("Roll (deg) x: %f y: %f z: %f",
+                glm::eulerAngles(targetCar->carBodyModel.orientation).x * 180 / SIMD_PI,
+                glm::eulerAngles(targetCar->carBodyModel.orientation).y * 180 / SIMD_PI,
+                glm::eulerAngles(targetCar->carBodyModel.orientation).z * 180 / SIMD_PI);
+    ImGui::End();
+    */
     // Draw Logger UI
     m_logger->onScreenLog.Draw("ONFS Log");
     // Draw UI (Tactically)

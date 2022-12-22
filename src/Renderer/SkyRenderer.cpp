@@ -49,7 +49,7 @@ void SkyRenderer::_LoadAssets()
                 tinyobj::index_t idx = shapes[s].mesh.indices[index_offset + v];
                 indices.emplace_back((const unsigned int &) idx.vertex_index);
                 verts.emplace_back(
-                  glm::vec3(attrib.vertices[3 * idx.vertex_index + 0] * 400, attrib.vertices[3 * idx.vertex_index + 1] * 400, attrib.vertices[3 * idx.vertex_index + 2] * 400));
+                  glm::vec3(attrib.vertices[3 * idx.vertex_index + 0] * 400 * SKYDOME_SCALE, attrib.vertices[3 * idx.vertex_index + 1] * 400 * SKYDOME_SCALE, attrib.vertices[3 * idx.vertex_index + 2] * 400 * SKYDOME_SCALE));
                 norms.emplace_back(glm::vec3(0.f, 0.f, 0.f)); // Fill the sphere attribs with empty data as missing
                 uvs.emplace_back(glm::vec2(0.0f, 0.0f));
             }

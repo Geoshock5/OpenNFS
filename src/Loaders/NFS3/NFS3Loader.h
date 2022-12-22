@@ -21,7 +21,7 @@
 #include "../../Scene/TrackBlock.h"
 #include "../../Renderer/Texture.h"
 
-const float NFS3_SCALE_FACTOR = 10.f;
+const float NFS3_SCALE_FACTOR = 1.f; // ORiginally 10.  Needs tweaking for physical correctness.
 
 class NFS3Loader
 {

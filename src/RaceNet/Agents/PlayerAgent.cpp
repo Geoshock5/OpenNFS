@@ -5,6 +5,7 @@ PlayerAgent::PlayerAgent(const std::shared_ptr<GLFWwindow> &window, const std::s
 {
     name = "DumbPanda";
     //const unsigned char *hats = glfwGetJoystickHats(GLFW_JOYSTICK_1, count);
+    //lastJoyState = JoyState();
 }
 
 void PlayerAgent::Simulate()
@@ -13,15 +14,15 @@ void PlayerAgent::Simulate()
     this->_UpdateNearestTrackblock();
     this->_UpdateNearestVroad();
 
-
     // Handle joystick input
     if (m_joyState->joy0axcount > 0)
     {
+        vehicle->GearChange(m_joyState->joy0buttons[1],m_joyState->joy0buttons[2]);
         vehicle->ApplyAccelerationForce((float)((m_joyState->joy0axes[5] + 1.0f) / 2.0f), (float)((m_joyState->joy0axes[4] + 1.0f) / 2.0f));
         vehicle->ApplyBrakingForce(m_joyState->joy0buttons[0]);
         vehicle->ApplyAnalogSteering(m_joyState->joy0axes[0]);
+        //lastJoyState = *m_joyState;
     }
-
     // if (userParams.windowActive && !ImGui::GetIO().MouseDown[1]) { }
     if (m_joyState->joy0axcount == NULL)
     {

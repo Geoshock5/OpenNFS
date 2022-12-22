@@ -17,6 +17,7 @@
 #include "OrbitalManager.h"
 #include "al.h"
 #include "alc.h"
+#include "../Audio/AudioEngine.h"
 #include "../Loaders/MusicLoader.h"
 
 class RaceSession
@@ -50,10 +51,7 @@ private:
     RacerManager m_racerManager;
     OrbitalManager m_orbitalManager;
 
-    ALCdevice *m_soundDevice = 0;
-    ALCcontext *m_soundContext = 0;
-    FILE *musicstream = 0;
-
+    /* DIsable audio stuff for now
     ALuint uiBuffers;
     ALuint uiSource;
     ALuint uiBuffer;
@@ -67,6 +65,7 @@ private:
     unsigned long ulBufferSize;
     unsigned long ulBytesWritten;
     void *pData = NULL;
+    */
 
     ParamData m_userParams;
     JoyState m_joyState;

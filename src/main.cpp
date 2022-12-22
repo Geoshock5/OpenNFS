@@ -13,6 +13,7 @@
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 
+#include "Audio/AudioEngine.h"
 #include "Config.h"
 #include "Util/Logger.h"
 #include "Scene/Track.h"
@@ -63,8 +64,10 @@ public:
         // Must initialise OpenGL here as the Loaders instantiate meshes which create VAO's
         std::shared_ptr<GLFWwindow> window = Renderer::InitOpenGL(Config::get().resX, Config::get().resY, "OpenNFS v" + ONFS_VERSION);
 
-        AssetData loadedAssets = {getEnum(Config::get().carTag), Config::get().car, getEnum(Config::get().trackTag), Config::get().track};
+        AudioEngine* m_audioEngine = new AudioEngine();
 
+        AssetData loadedAssets = {getEnum(Config::get().carTag), Config::get().car, getEnum(Config::get().trackTag), Config::get().track};
+        
         // TODO: TEMP FIX UNTIL I DO A PROPER RETURN from race session
         ASSERT(loadedAssets.trackTag != UNKNOWN, "Unknown track type!");
 

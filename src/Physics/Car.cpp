@@ -32,10 +32,17 @@ Car::Car(const CarData &carData, NFSVer nfsVersion, const std::string &carID) : 
 
     // Build the Bullet physics representation of the vehicle
     this->_GenPhysicsModel();
+
+    // Load audio
+    this->_LoadAudio();
 }
 
 Car::~Car()
 {
+    // Clean up audio
+    alDeleteBuffers(1, &uiBuffer);
+    alDeleteSources(1, &uiSource);
+    
     // Clean up the vehicle meshes
     leftFrontWheelModel.destroy();
     rightFrontWheelModel.destroy();
@@ -60,6 +67,15 @@ Car::~Car()
     }
 }
 
+void Car::StartSound()
+{
+    // Attach source to buffer, queue and play
+    alSourcei(uiSource, AL_BUFFER, uiBuffer);
+    alSourcei(uiSource, AL_LOOPING, AL_TRUE);
+    // alSourceQueueBuffers(uiSource, 1, &uiBuffer);
+    alSourcePlay(uiSource);
+}
+
 void Car::Update(btDynamicsWorld *dynamicsWorld)
 {
     // Update car
@@ -68,13 +84,16 @@ void Car::Update(btDynamicsWorld *dynamicsWorld)
     this->_ApplyInputs();
     // Update raycasts
     this->_GenRaycasts(dynamicsWorld);
+    
+    // Update engine note
+    alSourcef(uiSource, AL_PITCH, vehicleState.rpm / 2000.f);
 }
 
 void Car::ApplyAccelerationForce(bool accelerate, bool reverse)
 {
     if (accelerate)
     {
-        if (m_vehicle->getCurrentSpeedKmHour() < vehicleProperties.maxSpeed)
+        if (m_vehicle->getCurrentSpeedKmHour() < vehicleProperties.maxSpeed * 3.6)
         {
             vehicleState.gEngineForce   = vehicleProperties.maxEngineForce;
             vehicleState.gBreakingForce = 0.f;
@@ -97,19 +116,27 @@ void Car::ApplyAccelerationForce(bool accelerate, bool reverse)
 
 void Car::ApplyAccelerationForce(float accelerate, float reverse)
 {
+    float rpm = m_vehicle->getCurrentSpeedKmHour() / 3.6 / (vehicleProperties.wheelRadius * 2 * glm::pi<float>()) *
+      vehicleProperties.finalDriveMan * vehicleProperties.gearRatiosMan[vehicleState.currentGear] * 60;
+
+    vehicleState.rpm = glm::clamp<float>(rpm, vehicleProperties.minRPM, vehicleProperties.maxRPM);
     if (accelerate)
     {
-        if (m_vehicle->getCurrentSpeedKmHour() < vehicleProperties.maxSpeed)
+        if (m_vehicle->getCurrentSpeedKmHour() < vehicleProperties.maxSpeed * 3.6)
         {
-            vehicleState.gEngineForce   = vehicleProperties.maxEngineForce * accelerate;
-            vehicleState.gBreakingForce = 0.f;
+            int direction   = (vehicleState.currentGear == 0) ? -1 : 1;            
+            int torqueIndex        = glm::floor(vehicleState.rpm / 256.f);
+            vehicleState.gEngineForce = direction * accelerate * vehicleProperties.torqueCurve[torqueIndex] * vehicleProperties.gearRatiosMan[vehicleState.currentGear] * vehicleProperties.finalDriveMan / vehicleProperties.wheelRadius;
+            //vehicleState.gEngineForce   = vehicleProperties.maxEngineForce * accelerate;
+            vehicleState.gBreakingForce = vehicleProperties.maxBreakingForce * reverse;
         }
         else
         {
             vehicleState.gEngineForce = 0.f;
+            vehicleState.gBreakingForce = vehicleProperties.maxBreakingForce * reverse;
         }
     }
-    else if (reverse)
+    /* else if (reverse)
     {
         vehicleState.gEngineForce   = -vehicleProperties.maxEngineForce * reverse;
         vehicleState.gBreakingForce = 0.f;
@@ -117,7 +144,7 @@ void Car::ApplyAccelerationForce(float accelerate, float reverse)
     else
     {
         vehicleState.gEngineForce = 0.f;
-    }
+    }*/
 }
 
 void Car::ApplySteeringRight(bool apply)
@@ -156,6 +183,25 @@ void Car::ApplyBrakingForce(bool apply)
     {
         vehicleState.gBreakingForce = 0.f;
     }
+}
+
+void Car::GearChange(bool shiftUp, bool shiftDown)
+{
+    if (!justShifted && shiftUp && (vehicleState.currentGear < vehicleProperties.numGearsMan))
+    {
+        justShifted = true;
+        ++vehicleState.currentGear;
+    }
+    if (!justShifted && shiftDown && (vehicleState.currentGear > 0))
+    {
+        justShifted = true;
+        --vehicleState.currentGear;
+    }
+    else if (!shiftUp && !shiftDown && justShifted)
+    {
+        justShifted = false;
+    }
+    vehicleState.eGear = (Gear)vehicleState.currentGear;
 }
 
 void Car::SetPosition(glm::vec3 position, glm::quat orientation)
@@ -316,6 +362,22 @@ void Car::_LoadTextures()
     }
 }
 
+void Car::_LoadAudio()
+{
+    // Set up and load sounds
+    BnkLoader bnkFile;
+    std::vector<AudioBuffer> horn = bnkFile.LoadBnk("assets/car/NFS_3/corv/car.bnk");
+    LOG(INFO) << "Buffer has " << horn[0].GetHeaderPtr()->dwNumSamples << " samples of data. Buffer size " << sizeof(*horn[0].GetBufPtr()) << " bytes";
+
+    // Generate buffers and sources
+    alGenBuffers(1, &uiBuffer);
+    alGenSources(1, &uiSource);
+
+    // Add file to buffer
+    alBufferData(
+      uiBuffer, AL_FORMAT_MONO16, horn[0].GetBufPtr(), horn[0].GetHeaderPtr()->dwNumSamples * horn[0].GetHeaderPtr()->dwBytesPerSample, horn[0].GetHeaderPtr()->dwSampleRate);
+}
+
 void Car::_GenPhysicsModel()
 {
     // Get the size of a wheel
@@ -325,6 +387,9 @@ void Car::_GenPhysicsModel()
                                     (wheelDimensions.maxVertex.z - wheelDimensions.minVertex.z) / 2);
     vehicleProperties.wheelRadius = wheelSize.z;
     vehicleProperties.wheelWidth  = wheelSize.x;
+
+    LOG(INFO) << "PHYS: Calculated wheelbase " << glm::distance(leftFrontWheelModel.position, leftRearWheelModel.position);
+    LOG(INFO) << "PHYS: Calculated radius " << vehicleProperties.wheelRadius;
 
     // Generate the chassis collision mesh
     DimensionData chassisDimensions = Utils::GenDimensions(carBodyModel.m_vertices);
@@ -710,10 +775,10 @@ void Car::_SetModels(std::vector<CarModel> carModels)
 
 void Car::_SetVehicleProperties()
 {
-    // Load these from Carp.txt
+    // TODO: Load these from Carp.txt
     vehicleProperties.mass                  = 1750.f;
     vehicleProperties.maxSpeed              = 20.f;
-    vehicleProperties.maxEngineForce        = 3000.f;
+    vehicleProperties.maxEngineForce        = 30000.f; // Was 3000;
     vehicleProperties.maxBreakingForce      = 1000.f;
     vehicleProperties.suspensionRestLength  = btScalar(0.020);
     vehicleProperties.suspensionStiffness   = 750.f;
@@ -724,6 +789,28 @@ void Car::_SetVehicleProperties()
     vehicleProperties.steeringIncrement     = 0.01f;
     vehicleProperties.steeringClamp         = 0.15f;
     vehicleProperties.absoluteSteer         = false;
+    
+    // WIP: Load from Carp.txt
+    std::fstream carPhysicsFile;
+    std::stringstream carPhysicsPath;
+    carPhysicsPath << CAR_PATH << ToString(tag) << "/" << id;
+
+    if (tag == NFS_3 || tag == NFS_4)
+    {
+        carPhysicsPath << "/carp.txt";
+        carPhysicsFile.open(carPhysicsPath.str(), std::ios::in);
+        if (carPhysicsFile.is_open())
+        {
+            _ReadNFS3CARP(&carPhysicsFile, &vehicleProperties);
+        }
+        carPhysicsFile.close();
+    }
+    else if (tag == MCO)
+    {
+        // Not done yet
+    }
+    
+    
     // Set car colour
     if (!assetData.colours.empty())
     {
@@ -740,4 +827,124 @@ void Car::_SetVehicleProperties()
     vehicleState.gBreakingForce   = 100.f;
     vehicleState.gVehicleSteering = 0.f;
     vehicleState.steerRight = vehicleState.steerLeft = false;
+}
+
+void Car::_ReadNFS3CARP(std::fstream* infile, VehicleProperties* phys)
+{
+    std::string line;
+    size_t start;
+    size_t end;
+    uint8_t lineID = 0;
+    
+    std::stringstream str;
+    std::string word = "";
+    bool inFile      = true;
+
+    while (std::getline(*infile, line)&&inFile)
+    {      
+        start = line.find_last_of("(");
+        end   = line.find_last_of(")");
+        str.seekg(0);
+        
+        lineID = 0;
+        for (size_t i = start+1; i < end; i++)
+        {
+            char s;
+            line.copy(&s, 1, i);
+            lineID = ((lineID << 1) + (lineID << 3)) + (s-'0');
+        }
+
+        //LOG(INFO) << "Physics line: " << line;
+        //LOG(INFO) << "Start : " << start << ", end " << end << ". Switch on " << (int)lineID;
+        
+        switch (lineID)
+        {
+        case (2):
+            std::getline(*infile, line);
+            phys->mass = std::stof(line);
+            LOG(INFO) << "Vehicle mass set to " << phys->mass << "kg";
+            break;
+        case (3):
+            std::getline(*infile, line);
+            phys->numGearsMan = std::stoi(line);
+            LOG(INFO) << "Vehicle manual gearbox set to " << phys->numGearsMan << " gears";
+            break;
+        case (75):
+            std::getline(*infile, line);
+            phys->numGearsAuto = std::stoi(line);
+            LOG(INFO) << "Vehicle auto gearbox set to " << phys->numGearsAuto << " gears";
+            break;
+        case (7) :
+            std::getline(*infile, line);
+            str.str(line);
+            for (size_t i = 0; i < 8; i++)
+            {
+                if (std::getline(str, word, ','))
+                {
+                    // LOG(INFO) << "Torque entry: " << word;
+                    phys->velToRpmMan[i] = stof(word);
+                }
+            }
+            LOG(INFO) << "Vehicle vel-to-RPM manual ratios set.";
+            break;
+        case (8):
+            std::getline(*infile, line);
+            str.str(line);
+            for (size_t i = 0; i < 8; i++)
+            {
+                if (std::getline(str, word, ','))
+                {
+                    // LOG(INFO) << "Torque entry: " << word;
+                    phys->gearRatiosMan[i] = stof(word);
+                }
+            }
+            LOG(INFO) << "Vehicle manual gear ratios set.";
+            break;
+        case (10):
+            std::getline(*infile, line);
+            str.str(line);
+            LOG(INFO) << "Line input " << line;
+            for (size_t i = 0; i < 41; i++)
+            {
+                if (std::getline(str, word, ','))
+                {
+                    //LOG(INFO) << "Torque entry: " << word;
+                    phys->torqueCurve[i] = stof(word);
+                }
+            }
+            LOG(INFO) << "Vehicle torque curve set.";
+            break;
+        case (11):
+            std::getline(*infile, line);
+            phys->finalDriveMan = std::stof(line);
+            LOG(INFO) << "Vehicle final drive manual set to " << phys->finalDriveMan;
+            break;
+        case (79):
+            std::getline(*infile, line);
+            phys->finalDriveAuto = std::stof(line);
+            LOG(INFO) << "Vehicle final drive auto set to " << phys->finalDriveAuto;
+            break;
+        case (12):
+            std::getline(*infile, line);
+            phys->minRPM = std::stoi(line);
+            LOG(INFO) << "Vehicle min RPM set to " << phys->minRPM << " RPM";
+            break;
+        case (13):
+            std::getline(*infile, line);
+            phys->maxRPM = std::stoi(line);
+            LOG(INFO) << "Vehicle max RPM set to " << phys->maxRPM << " RPM";
+            break;
+        case (15):
+            std::getline(*infile, line);
+            phys->maxSpeed = std::stof(line);
+            LOG(INFO) << "Vehicle max speed set to " << phys->maxSpeed << " m/s";
+            break;
+        default:
+            // Do nothing and skip over
+            if(!std::getline(*infile, line))
+            {
+                inFile = false;
+            }
+        }
+    }
 }

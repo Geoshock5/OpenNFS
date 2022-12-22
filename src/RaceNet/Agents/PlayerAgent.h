@@ -13,6 +13,7 @@ public:
     void Simulate() override;
 
     JoyState *m_joyState;
+    JoyState lastJoyState;
 
 private:
     std::shared_ptr<GLFWwindow> m_window;

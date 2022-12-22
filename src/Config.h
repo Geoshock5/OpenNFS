@@ -120,7 +120,7 @@ struct ParamData
     bool physicsDebugView       = false;
     bool drawHermiteFrustum     = false;
     bool drawTrackAABB          = false;
-    bool useClassicGraphics     = false;
+    bool useClassicGraphics     = true;
     bool attachCamToHermite     = false;
     bool useNbData              = true;
     bool attachCamToCar         = true;

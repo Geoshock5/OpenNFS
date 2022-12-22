@@ -15,22 +15,17 @@ RaceSession::RaceSession(const std::shared_ptr<GLFWwindow> &window,
     m_loadedAssets = {m_playerAgent->vehicle->tag, m_playerAgent->vehicle->id, m_track->nfsVersion, m_track->name};
     m_renderer.m_joyState = &m_joyState;
     m_playerAgent->m_joyState = &m_joyState;
+    //m_renderer.m_playerCar    = currentCar;
 
-    // Register an audio device and create a context
-    m_soundDevice = alcOpenDevice(NULL);
-    m_soundContext = alcCreateContext(m_soundDevice, NULL);
-    if (m_soundDevice)
+    /* if (m_soundDevice)
     {
         LOG(INFO) << "ALOutput : Using OpenAL Device " << alcGetString(m_soundDevice, ALC_DEVICE_SPECIFIER) << "\n";
         LOG(INFO) << "AL Context: " << m_soundContext << "\n";
         alcMakeContextCurrent(m_soundContext);
 
         //MusicLoader::MusicLoader("../resources/NFS_3/gamedata/audio/pc/alpirock");
-        BnkLoader bnkFile;
-        std::vector<AudioBuffer> horn = bnkFile.LoadBnk("assets/car/NFS_3/corv/car.bnk");
-        LOG(INFO) << "Buffer has " << horn[0].GetHeaderPtr()->dwNumSamples << " samples of data. Buffer size " << sizeof(*horn[0].GetBufPtr()) << " bytes";
 
-        /*
+        
         // Open raw PCM stream
         musicstream = fopen("file.pcm", "rb");
         fseek(musicstream, 0, SEEK_END);
@@ -40,22 +35,10 @@ RaceSession::RaceSession(const std::shared_ptr<GLFWwindow> &window,
 
         ALchar *musicData = new char[streamlength];
         fread(musicData, streamlength, 1, musicstream);
-        */
-
-        // Generate buffers and sources
-        alGenBuffers(1, &uiBuffer);
-        alGenSources(1, &uiSource);
-
-        // Add file to buffer
-        alBufferData(uiBuffer, AL_FORMAT_MONO16, horn[0].GetBufPtr(), horn[0].GetHeaderPtr()->dwNumSamples * horn[0].GetHeaderPtr()->dwBytesPerSample, horn[0].GetHeaderPtr()->dwSampleRate);
         
-        // Attach source to buffer, queue and play
-        alSourcei(uiSource, AL_BUFFER, uiBuffer);
-        alSourcei(uiSource, AL_LOOPING, AL_TRUE);
-        //alSourceQueueBuffers(uiSource, 1, &uiBuffer);
-        alSourcePlay(uiSource);
     }
-    
+    */
+
     // Set up the cameras
     m_freeCamera    = std::make_shared<FreeCamera>(m_window, m_track->trackBlocks[0].position);
     m_hermiteCamera = std::make_shared<HermiteCamera>(m_track->centerSpline, m_window);
@@ -167,17 +150,6 @@ AssetData RaceSession::Simulate()
         // Keep track of total elapsed time too
         m_totalTime += deltaTime;
         ++m_ticks;
-    }
-
-    // Close sound device
-    if (m_soundDevice)
-    {
-        alcMakeContextCurrent(NULL);
-        alcDestroyContext(m_soundContext);
-        alcCloseDevice(m_soundDevice);
-        m_soundDevice = 0;
-
-        fclose(musicstream);
     }
 
     // Just set a flag temporarily to let main know that we outta here

@@ -6,6 +6,8 @@
 #include "../Camera/BaseCamera.h"
 #include "../Scene/Lights/GlobalLight.h"
 
+const float SKYDOME_SCALE =10.0f;
+
 class SkyRenderer
 {
 public:

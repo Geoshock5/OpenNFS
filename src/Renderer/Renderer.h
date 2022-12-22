@@ -66,6 +66,7 @@ public:
                 const std::vector<std::shared_ptr<CarAgent>> &racers);
 
     JoyState *m_joyState;
+    //std::shared_ptr<Car> m_playerCar;
 
 private:
     void _InitialiseIMGUI();
