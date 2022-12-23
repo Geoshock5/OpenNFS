@@ -116,7 +116,7 @@ void Car::ApplyAccelerationForce(bool accelerate, bool reverse)
 
 void Car::ApplyAccelerationForce(float accelerate, float reverse)
 {
-    float rpm = m_vehicle->getCurrentSpeedKmHour() / 3.6 / (vehicleProperties.wheelRadius * 2 * glm::pi<float>()) *
+    float rpm = m_vehicle->getCurrentSpeedKmHour() / 3.6f / (vehicleProperties.wheelRadius * 2 * glm::pi<float>()) *
       vehicleProperties.finalDriveMan * vehicleProperties.gearRatiosMan[vehicleState.currentGear] * 60;
 
     vehicleState.rpm = glm::clamp<float>(rpm, vehicleProperties.minRPM, vehicleProperties.maxRPM);
@@ -125,7 +125,7 @@ void Car::ApplyAccelerationForce(float accelerate, float reverse)
         if (m_vehicle->getCurrentSpeedKmHour() < vehicleProperties.maxSpeed * 3.6)
         {
             int direction   = (vehicleState.currentGear == 0) ? -1 : 1;            
-            int torqueIndex        = glm::floor(vehicleState.rpm / 256.f);
+            int torqueIndex        = (int)glm::floor(vehicleState.rpm / 256.f);
             vehicleState.gEngineForce = direction * accelerate * vehicleProperties.torqueCurve[torqueIndex] * vehicleProperties.gearRatiosMan[vehicleState.currentGear] * vehicleProperties.finalDriveMan / vehicleProperties.wheelRadius;
             //vehicleState.gEngineForce   = vehicleProperties.maxEngineForce * accelerate;
             vehicleState.gBreakingForce = vehicleProperties.maxBreakingForce * reverse;
@@ -366,7 +366,9 @@ void Car::_LoadAudio()
 {
     // Set up and load sounds
     BnkLoader bnkFile;
-    std::vector<AudioBuffer> horn = bnkFile.LoadBnk("assets/car/NFS_3/corv/car.bnk");
+    std::stringstream carAudioPath;
+    carAudioPath << CAR_PATH << ToString(tag) << "/" << id << "/car.bnk";
+    std::vector<AudioBuffer> horn = bnkFile.LoadBnk(carAudioPath.str());
     LOG(INFO) << "Buffer has " << horn[0].GetHeaderPtr()->dwNumSamples << " samples of data. Buffer size " << sizeof(*horn[0].GetBufPtr()) << " bytes";
 
     // Generate buffers and sources
@@ -775,12 +777,15 @@ void Car::_SetModels(std::vector<CarModel> carModels)
 
 void Car::_SetVehicleProperties()
 {
+    // Set up Bullet suspension tuning params
+    tuning.m_maxSuspensionTravelCm = 20.f;
+    
     // TODO: Load these from Carp.txt
     vehicleProperties.mass                  = 1750.f;
     vehicleProperties.maxSpeed              = 20.f;
     vehicleProperties.maxEngineForce        = 30000.f; // Was 3000;
     vehicleProperties.maxBreakingForce      = 1000.f;
-    vehicleProperties.suspensionRestLength  = btScalar(0.020);
+    vehicleProperties.suspensionRestLength  = btScalar(0.15);
     vehicleProperties.suspensionStiffness   = 750.f;
     vehicleProperties.suspensionDamping     = 200.f;
     vehicleProperties.suspensionCompression = 500.4f;
@@ -789,6 +794,16 @@ void Car::_SetVehicleProperties()
     vehicleProperties.steeringIncrement     = 0.01f;
     vehicleProperties.steeringClamp         = 0.15f;
     vehicleProperties.absoluteSteer         = false;
+    // Additional properties to receive default value;
+    vehicleProperties.finalDriveMan         = 3.42f;
+    vehicleProperties.numGearsMan          = 6;
+    float gearRatiosMan[8]                  = {2.5f, 0.0f, 2.5f, 1.8f, 1.2f, 1.f, 0.8f, 0.5f};
+    for (size_t i = 0; i < vehicleProperties.numGearsMan; i++)
+    {
+        vehicleProperties.gearRatiosMan[i] = gearRatiosMan[i];
+    }
+    vehicleProperties.minRPM                = 1000;
+    vehicleProperties.maxRPM                = 6000;
     
     // WIP: Load from Carp.txt
     std::fstream carPhysicsFile;
@@ -809,7 +824,7 @@ void Car::_SetVehicleProperties()
     {
         // Not done yet
     }
-    
+    //LOG(DEBUG) << "Finished parsing physics.";
     
     // Set car colour
     if (!assetData.colours.empty())
@@ -821,24 +836,26 @@ void Car::_SetVehicleProperties()
     {
         vehicleProperties.colour = glm::vec3(Utils::RandomFloat(0.f, 1.f), Utils::RandomFloat(0.f, 1.f), Utils::RandomFloat(0.f, 1.f));
     }
+    //LOG(DEBUG) << "Colours set.";
 
     // State
     vehicleState.gEngineForce     = 0.f;
     vehicleState.gBreakingForce   = 100.f;
     vehicleState.gVehicleSteering = 0.f;
     vehicleState.steerRight = vehicleState.steerLeft = false;
+    LOG(DEBUG) << "Finished SetVehicleProperties.";
 }
 
 void Car::_ReadNFS3CARP(std::fstream* infile, VehicleProperties* phys)
 {
     std::string line;
-    size_t start;
-    size_t end;
-    uint8_t lineID = 0;
+    static size_t start;
+    static size_t end;
+    static uint8_t lineID = 0;
     
     std::stringstream str;
     std::string word = "";
-    bool inFile      = true;
+    bool inFile = true;
 
     while (std::getline(*infile, line)&&inFile)
     {      
@@ -847,11 +864,14 @@ void Car::_ReadNFS3CARP(std::fstream* infile, VehicleProperties* phys)
         str.seekg(0);
         
         lineID = 0;
-        for (size_t i = start+1; i < end; i++)
+        if (start != string::npos)
         {
-            char s;
-            line.copy(&s, 1, i);
-            lineID = ((lineID << 1) + (lineID << 3)) + (s-'0');
+            for (size_t i = start + 1; i < end; i++)
+            {
+                char s;
+                line.copy(&s, 1, i);
+                lineID = ((lineID << 1) + (lineID << 3)) + (s - '0');
+            }
         }
 
         //LOG(INFO) << "Physics line: " << line;
@@ -859,6 +879,8 @@ void Car::_ReadNFS3CARP(std::fstream* infile, VehicleProperties* phys)
         
         switch (lineID)
         {
+        case (0):
+            break;
         case (2):
             std::getline(*infile, line);
             phys->mass = std::stof(line);
@@ -926,12 +948,12 @@ void Car::_ReadNFS3CARP(std::fstream* infile, VehicleProperties* phys)
             break;
         case (12):
             std::getline(*infile, line);
-            phys->minRPM = std::stoi(line);
+            phys->minRPM = std::stof(line);
             LOG(INFO) << "Vehicle min RPM set to " << phys->minRPM << " RPM";
             break;
         case (13):
             std::getline(*infile, line);
-            phys->maxRPM = std::stoi(line);
+            phys->maxRPM = std::stof(line);
             LOG(INFO) << "Vehicle max RPM set to " << phys->maxRPM << " RPM";
             break;
         case (15):
@@ -941,10 +963,16 @@ void Car::_ReadNFS3CARP(std::fstream* infile, VehicleProperties* phys)
             break;
         default:
             // Do nothing and skip over
-            if(!std::getline(*infile, line))
+            if (line[0] == 0x00)
             {
                 inFile = false;
             }
+            else if(!std::getline(*infile, line))
+            {
+                inFile = false;
+                LOG(DEBUG) << "End of CARP file, exiting.";
+            }
         }
     }
+    LOG(DEBUG) << "Finished reading CARP file successfully.";
 }

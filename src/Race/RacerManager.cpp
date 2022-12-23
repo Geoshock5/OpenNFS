@@ -32,7 +32,7 @@ void RacerManager::_InitialisePlayerVehicle(const std::shared_ptr<PlayerAgent> &
 {
     physicsEngine.RegisterVehicle(playerAgent->vehicle);
     playerAgent->ResetToIndexInTrackblock(0, 0, 0.f);
-    playerAgent->vehicle->StartSound();
+    //playerAgent->vehicle->StartSound();
     racers.emplace_back(playerAgent);
 }
 
