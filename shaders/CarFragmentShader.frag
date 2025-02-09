@@ -1,3 +1,6 @@
+// Precision qualifiers
+precision mediump float;
+
 // Interpolated values from the vertex shaders
 in vec2 envUV;
 in vec2 UV;
@@ -15,7 +18,7 @@ flat in uint polyFlag;
 out vec4 color;
 
 // Values that stay constant for the whole mesh.
-uniform sampler2DArray textureArray;
+uniform mediump sampler2DArray textureArray;
 uniform sampler2D envMapTextureSampler;
 uniform sampler2D carTextureSampler;
 

@@ -1,13 +1,13 @@
 // Ouput data
-layout(location = 0) out float fragmentdepth;
+layout(location = 0) out mediump float fragmentdepth;
 
 // Discard pixels for depth buffer based on Alpha (This might nerf perf)
-in vec2 UV;
+in mediump vec2 UV;
 flat in uint texIndex;
-uniform sampler2DArray texture_array;
+uniform mediump sampler2DArray texture_array;
 
 void main(){
-    vec4 tempColor = texture(texture_array, vec3(UV, texIndex)).rgba;
+    mediump vec4 tempColor = texture(texture_array, vec3(UV, texIndex)).rgba;
     if (tempColor.a <= 0.5)
          discard;
 

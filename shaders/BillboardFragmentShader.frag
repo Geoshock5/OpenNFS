@@ -1,3 +1,6 @@
+// Precision qualifiers
+precision mediump float;
+
 // Interpolated values from the vertex shaders
 in vec2 UV;
 

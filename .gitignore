@@ -4,5 +4,14 @@
 # CMake
 cmake-build-debug/
 
+# build
+build/
 
+# submodules
+lib/
+lib/bullet3/
+lib/glew-cmake/
 
+# game data
+resources/
+resources/NFS_3
