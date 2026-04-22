@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.15)
 project(OpenNFS)
 
 set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
+set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})                                   
 
 include(CompileGLSLToSPIRV)
 
@@ -184,6 +184,10 @@ set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_WAYLAND OFF CACHE BOOL "" FORCE)
 add_subdirectory(lib/glfw)
 list(APPEND ONFS_LIBRARIES glfw)
+
+#[[OpenAL Configuration]]
+add_subdirectory(lib/openal-soft)
+include_directories(lib/openal-soft/include)
 
 #[[OpenGL Configuration]]
 find_package(OpenGL REQUIRED)
