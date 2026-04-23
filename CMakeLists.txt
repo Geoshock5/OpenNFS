@@ -41,6 +41,7 @@ set(SOURCE_FILES
         ${IMGUI_SOURCES}
         lib/glew-cmake/src/glew.c
         resources/asset/icon.rc
+        src/Audio/AudioEngine.cpp
         src/Camera/BaseCamera.cpp
         src/Camera/BaseCamera.cpp
         src/Camera/CarCamera.cpp
@@ -188,6 +189,7 @@ list(APPEND ONFS_LIBRARIES glfw)
 #[[OpenAL Configuration]]
 add_subdirectory(lib/openal-soft)
 include_directories(lib/openal-soft/include)
+list(APPEND ONFS_LIBRARIES OpenAL)
 
 #[[OpenGL Configuration]]
 find_package(OpenGL REQUIRED)

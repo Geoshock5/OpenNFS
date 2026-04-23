@@ -8,6 +8,7 @@
 #include <filesystem>
 #include <string>
 
+#include "Audio/AudioEngine.h"
 #include "Config.h"
 #include "GameState/GameStateManager.h"
 #include "GameState/MainMenuState.h"
@@ -46,6 +47,8 @@ class OpenNFSEngine {
         LOG(INFO) << "OpenNFS Version " << ONFS_VERSION;
 
         std::shared_ptr<GLFWwindow> const window{Renderer::InitOpenGL("OpenNFS v" + ONFS_VERSION)};
+        AudioEngine* m_audioEngine = new AudioEngine();
+        LOG(INFO) << "Audio Engine : " << m_audioEngine;
 
         // Create game context shared between all states
         GameContext context{
