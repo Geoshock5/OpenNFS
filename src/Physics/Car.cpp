@@ -56,7 +56,9 @@ namespace OpenNFS {
 
         // Update raycasts
         this->_GenRaycasts(dynamicsWorld);
+    }
 
+    void Car::PhysicsTick(float const dt) {
         switch (physicsModel) {
         case PhysicsModel::BULLET:
             break;
@@ -153,6 +155,7 @@ namespace OpenNFS {
         m_carChassis->setLinearVelocity(btVector3(0, 0, 0));
         m_carChassis->setAngularVelocity(btVector3(0, 0, 0));
         m_vehicle->resetSuspension();
+        vehicleState.requestedGear = Gear::NEUTRAL;
         for (int wheelIdx = 0; wheelIdx < m_vehicle->getNumWheels(); ++wheelIdx) {
             // Synchronize the wheels with the (interpolated) chassis world transform
             m_vehicle->updateWheelTransform(wheelIdx, true);
@@ -372,7 +375,7 @@ namespace OpenNFS {
         btRigidBody::btRigidBodyConstructionInfo cInfo(assetData.physicsData.mass, m_vehicleMotionState.get(), compound, localInertia);
         m_carChassis = std::make_unique<btRigidBody>(cInfo);
         m_carChassis->setUserPointer(this);
-        m_carChassis->setDamping(0.2f, 0.2f);
+        m_carChassis->setDamping(0.0f, 0.0f);
         m_carChassis->setLinearVelocity(btVector3(0, 0, 0));
         m_carChassis->setAngularVelocity(btVector3(0, 0, 0));
         m_carChassis->setActivationState(DISABLE_DEACTIVATION);
